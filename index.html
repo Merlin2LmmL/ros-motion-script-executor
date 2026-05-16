@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROS2 Bewegungsbefehl-Editor</title>
+  <style>
+    :root {
+      --bg-primary:   #ffffff;
+      --bg-secondary: #f5f5f2;
+      --bg-tertiary:  #eeede8;
+      --text-primary:   #1a1a18;
+      --text-secondary: #5a5a56;
+      --text-tertiary:  #9a9990;
+      --border-light:  rgba(0,0,0,0.10);
+      --border-mid:    rgba(0,0,0,0.18);
+      --border-strong: rgba(0,0,0,0.28);
+      --accent:      #185FA5;
+      --accent-bg:   #E6F1FB;
+      --accent-text: #0C447C;
+      --success:     #0F6E56;
+      --danger:      #A32D2D;
+      --danger-bg:   #FCEBEB;
+      --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+      --font-sans: 'Inter','Segoe UI',system-ui,sans-serif;
+      --font-mono: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary:   #1c1c1a;
+        --bg-secondary: #242422;
+        --bg-tertiary:  #2c2c2a;
+        --text-primary:   #f0ede8;
+        --text-secondary: #a8a5a0;
+        --text-tertiary:  #6a6760;
+        --border-light:  rgba(255,255,255,0.08);
+        --border-mid:    rgba(255,255,255,0.14);
+        --border-strong: rgba(255,255,255,0.22);
+        --accent:      #60A5FA;
+        --accent-bg:   #1a2a3a;
+        --accent-text: #93C5FD;
+        --success:     #34D399;
+        --danger:      #F87171;
+        --danger-bg:   #2a1010;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      }
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh;font-size:14px;line-height:1.5;}
+
+    .ico{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .ico svg{display:block;}
+
+    .topbar{background:var(--bg-primary);border-bottom:0.5px solid var(--border-light);padding:0 2rem;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+    .topbar-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text-primary);}
+    .topbar-sub{font-size:12px;color:var(--text-tertiary);font-weight:400;}
+    .topbar-spacer{flex:1;}
+    .badge-pill{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--accent-bg);color:var(--accent-text);}
+
+    .layout{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;}
+    @media(max-width:800px){.layout{grid-template-columns:1fr;}.topbar{padding:0 1rem;}}
+
+    .card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-xl);padding:1.25rem;box-shadow:var(--shadow-sm);}
+    .card+.card{margin-top:1rem;}
+    .card-title{font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px;margin-bottom:1rem;}
+
+    .preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;}
+    .preset-btn{border:0.5px solid var(--border-light);background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 6px;cursor:pointer;text-align:center;transition:all .12s;color:var(--text-primary);display:flex;flex-direction:column;align-items:center;gap:5px;}
+    .preset-btn:hover{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
+    .preset-btn:active{transform:translateY(0);}
+    .preset-btn .plabel{font-size:11px;font-weight:500;}
+
+    .steps-list{display:flex;flex-direction:column;gap:6px;min-height:60px;}
+    .empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text-tertiary);font-size:13px;border:1.5px dashed var(--border-light);border-radius:var(--radius-lg);}
+
+    .step-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:10px 12px;display:flex;align-items:center;gap:8px;transition:border-color .12s,box-shadow .12s;}
+    .step-card:hover{border-color:var(--border-mid);box-shadow:var(--shadow-sm);}
+    .step-card.drag-over{border-color:var(--accent);border-style:dashed;}
+    .step-card.dragging{opacity:.35;}
+    .drag-handle{cursor:grab;color:var(--text-tertiary);flex-shrink:0;padding:2px;}
+    .drag-handle:active{cursor:grabbing;}
+    .step-num{font-size:11px;font-weight:600;color:var(--text-tertiary);min-width:18px;text-align:center;}
+
+    .type-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+    .tb-forward  {background:#E6F1FB;color:#0C447C;}
+    .tb-backward {background:#FAECE7;color:#712B13;}
+    .tb-left     {background:#EAF3DE;color:#27500A;}
+    .tb-right    {background:#FBEAF0;color:#72243E;}
+    .tb-curve    {background:#EEEDFE;color:#3C3489;}
+    .tb-stop     {background:#F1EFE8;color:#444441;}
+    .tb-custom   {background:#FAEEDA;color:#633806;}
+    @media(prefers-color-scheme:dark){
+      .tb-forward  {background:#0c2040;color:#93C5FD;}
+      .tb-backward {background:#2a1208;color:#FDBA74;}
+      .tb-left     {background:#0a2010;color:#86EFAC;}
+      .tb-right    {background:#2a0a1a;color:#F9A8D4;}
+      .tb-curve    {background:#1a1040;color:#C4B5FD;}
+      .tb-stop     {background:#222220;color:#a8a5a0;}
+      .tb-custom   {background:#251808;color:#FCD34D;}
+    }
+
+    .step-fields{display:flex;gap:6px;flex:1;flex-wrap:wrap;align-items:center;}
+    .field-wrap{display:flex;flex-direction:column;gap:1px;}
+    .field-lbl{font-size:9px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;}
+    .field-in{font-size:13px;padding:4px 7px;border:0.5px solid var(--border-light);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);width:76px;font-family:var(--font-mono);transition:border-color .1s;}
+    .field-in.wide{width:110px;font-family:var(--font-sans);}
+    .field-in:focus{outline:none;border-color:var(--accent);}
+
+    .step-actions{display:flex;gap:2px;flex-shrink:0;}
+    .icon-btn{border:none;background:none;cursor:pointer;padding:5px;border-radius:var(--radius-sm);color:var(--text-tertiary);display:flex;align-items:center;transition:all .1s;}
+    .icon-btn:hover{background:var(--bg-secondary);color:var(--text-primary);}
+    .icon-btn.del:hover{background:var(--danger-bg);color:var(--danger);}
+
+    .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+    .toolbar-spacer{flex:1;}
+    .step-counter{font-size:12px;color:var(--text-tertiary);font-weight:500;}
+
+    button.btn{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-sans);font-size:12px;font-weight:500;padding:6px 12px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);cursor:pointer;transition:all .1s;}
+    button.btn:hover{background:var(--bg-secondary);border-color:var(--border-strong);}
+    button.btn:active{transform:scale(.98);}
+    button.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+    button.btn.primary:hover{opacity:.9;}
+
+    #pathCanvas{display:block;width:100%;height:auto;border-radius:var(--radius-md);background:var(--bg-secondary);}
+
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .stat-box{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;}
+    .stat-label{font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;}
+    .stat-value{font-size:18px;font-weight:600;color:var(--text-primary);margin-top:2px;font-family:var(--font-mono);}
+    .stat-unit{font-size:11px;color:var(--text-secondary);font-weight:400;}
+
+    .json-output{background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);white-space:pre;overflow-x:auto;max-height:240px;overflow-y:auto;line-height:1.7;border:0.5px solid var(--border-light);}
+    .jk{color:#185FA5;} .js{color:#0F6E56;} .jn{color:#A32D2D;} .jp{color:var(--text-tertiary);}
+    @media(prefers-color-scheme:dark){.jk{color:#93C5FD;}.js{color:#86EFAC;}.jn{color:#FCA5A5;}}
+    .export-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+
+    #toast{position:fixed;bottom:24px;right:24px;background:var(--text-primary);color:var(--bg-primary);border-radius:var(--radius-md);padding:9px 16px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;}
+    #toast.show{opacity:1;transform:translateY(0);}
+    ::-webkit-scrollbar{width:6px;height:6px;}
+    ::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px;}
+    .footer{text-align:center;padding:2rem;font-size:12px;color:var(--text-tertiary);}
+    .footer a{color:var(--accent);text-decoration:none;}
+    .footer a:hover{text-decoration:underline;}
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════ INLINE SVG SPRITE (no CDN needed) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-robot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7m0 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/><circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="1" fill="currentColor" stroke="none"/><path d="M7 21v1m10-1v1"/>
+  </symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="5" cy="6" r=".8" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M12 19h4.5a3.5 3.5 0 0 0 0-7H6.5a3.5 3.5 0 0 1 0-7H12"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 16 11 12 15 16 20 9"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-python" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2C8.5 2 7 3.5 7 5.5V8h5v1H5.5C3.5 9 2 10.5 2 13s1.5 4 3.5 4H7v-2c0-2 1.5-3 3.5-3H14c2 0 3-1 3-3V5.5C17 3.5 15.5 2 12.5 2h-1zm-1 2.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/><path d="M12.5 22c3 0 4.5-1.5 4.5-3.5V16h-5v-1h6.5c2 0 3.5-1.5 3.5-4s-1.5-4-3.5-4H17v2c0 2-1.5 3-3.5 3H10c-2 0-3 1-3 3v3c0 2 1.5 3.5 4.5 3.5h1zm1-2.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 16l.75 2.25L8 19l-2.25.75L5 22l-.75-2.25L2 19l2.25-.75z"/><path d="M19 3l.75 2.25L22 6l-2.25.75L19 9l-.75-2.25L16 6l2.25-.75z"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="9" cy="19" r="1.2"/><circle cx="15" cy="5" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="15" cy="19" r="1.2"/></symbol>
+  <symbol id="i-up"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-x"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <!-- preset icons -->
+  <symbol id="i-fwd"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></symbol>
+  <symbol id="i-bwd"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></symbol>
+  <symbol id="i-ccw"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></symbol>
+  <symbol id="i-cw"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.5"/></symbol>
+  <symbol id="i-cl"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l8 10V7"/><path d="M14 7h7"/></symbol>
+  <symbol id="i-cr"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 17V7l-8 10V7"/><path d="M10 7H3"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9"  cy="6"  r="2.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="9"  cy="18" r="2.2" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<header class="topbar">
+  <span class="topbar-logo">
+    <span class="ico" style="width:22px;height:22px;color:var(--accent)"><svg viewBox="0 0 24 24"><use href="#i-robot"/></svg></span>
+    ROS2 Bewegungsbefehl-Editor
+    <span class="topbar-sub">für motion_script_executor</span>
+  </span>
+  <span class="badge-pill">v1.1</span>
+  <div class="topbar-spacer"></div>
+  <button class="btn" onclick="loadExample()">
+    <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-sparkles"/></svg></span>Beispiel laden
+  </button>
+  <button class="btn primary" onclick="downloadJSON()">
+    <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-download"/></svg></span>JSON herunterladen
+  </button>
+</header>
+
+<div class="layout">
+  <div>
+    <!-- Preset buttons -->
+    <div class="card">
+      <div class="card-title">
+        <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-plus"/></svg></span>Anweisung hinzufügen
+      </div>
+      <div class="preset-grid" id="presetGrid"></div>
+    </div>
+
+    <!-- Steps -->
+    <div class="card" style="margin-top:1rem;">
+      <div class="toolbar">
+        <div class="card-title" style="margin-bottom:0;">
+          <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-list"/></svg></span>Sequenz
+        </div>
+        <div class="toolbar-spacer"></div>
+        <span class="step-counter" id="stepCounter">0 Anweisungen</span>
+        <button class="btn" onclick="clearAll()">
+          <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-trash"/></svg></span>Alle löschen
+        </button>
+      </div>
+      <div class="steps-list" id="stepsList">
+        <div class="empty-state">
+          <span class="ico" style="width:26px;height:26px;margin:0 auto 8px;display:flex"><svg viewBox="0 0 24 24"><use href="#i-up"/></svg></span>
+          Wähle oben einen Befehlstyp aus, um zu beginnen
+        </div>
+      </div>
+    </div>
+
+    <!-- JSON -->
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-title">
+        <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg></span>
+        JSON-Vorschau
+        <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);margin-left:4px;">(action · linear_x · angular_z · duration)</span>
+      </div>
+      <div class="json-output" id="jsonOutput">[]</div>
+      <div class="export-row">
+        <button class="btn primary" onclick="downloadJSON()">
+          <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-download"/></svg></span>JSON herunterladen
+        </button>
+        <button class="btn" onclick="copyJSON()">
+          <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-copy"/></svg></span>JSON kopieren
+        </button>
+        <button class="btn" onclick="copyPython()">
+          <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-python"/></svg></span>Als Python kopieren
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Path preview -->
+    <div class="card">
+      <div class="card-title">
+        <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-route"/></svg></span>Pfad-Vorschau
+      </div>
+      <canvas id="pathCanvas" width="600" height="400"></canvas>
+      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#0F6E56;display:inline-block;"></span>Start</span>
+        <span style="font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#A32D2D;display:inline-block;"></span>Ende</span>
+        <span style="font-size:11px;color:var(--text-tertiary);">≈ 30 px / m</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-title">
+        <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg></span>Statistiken
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-label">Gesamtdauer</div><div class="stat-value" id="sDauer">0.0 <span class="stat-unit">s</span></div></div>
+        <div class="stat-box"><div class="stat-label">Anweisungen</div><div class="stat-value" id="sCount">0</div></div>
+        <div class="stat-box"><div class="stat-label">Max. Geschw.</div><div class="stat-value" id="sMaxV">0.00 <span class="stat-unit">m/s</span></div></div>
+        <div class="stat-box"><div class="stat-label">Max. Drehrate</div><div class="stat-value" id="sMaxW">0.00 <span class="stat-unit">r/s</span></div></div>
+      </div>
+    </div>
+
+    <!-- Import -->
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-title">
+        <span class="ico" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#i-upload"/></svg></span>JSON importieren
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">
+        Akzeptiert <code>action</code>/<code>aktion</code> und <code>duration</code>/<code>dauer</code>
+      </p>
+      <label class="btn" style="cursor:pointer;display:inline-flex;gap:5px;">
+        <span class="ico" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><use href="#i-upload"/></svg></span>Datei auswählen
+        <input type="file" accept=".json" onchange="importJSON(event)" style="display:none;">
+      </label>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  ROS2 Bewegungsbefehl-Editor &mdash;
+  kompatibel mit <a href="https://github.com/autonohm/ohm_mecanum_sim" target="_blank">ohm_mecanum_sim</a>
+  &amp; jedem /cmd_vel-Topic
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   JSON export uses English field names matching the Python node:
+     action, linear_x, angular_z, duration
+   Import accepts both English AND German field names.
+   ══════════════════════════════════════════════════════════════════ */
+
+const PRESETS = [
+  { id:'forward',  label:'Vorwärts',  icon:'i-fwd',     lx: 0.30, az:  0.00, d:2.0 },
+  { id:'backward', label:'Rückwärts', icon:'i-bwd',     lx:-0.30, az:  0.00, d:2.0 },
+  { id:'left',     label:'Drehen L',  icon:'i-ccw',     lx: 0.00, az:  0.50, d:1.5 },
+  { id:'right',    label:'Drehen R',  icon:'i-cw',      lx: 0.00, az: -0.50, d:1.5 },
+  { id:'curve_l',  label:'Kurve L',   icon:'i-cl',      lx: 0.30, az:  0.30, d:2.0 },
+  { id:'curve_r',  label:'Kurve R',   icon:'i-cr',      lx: 0.30, az: -0.30, d:2.0 },
+  { id:'stop',     label:'Stopp',     icon:'i-stop',    lx: 0.00, az:  0.00, d:0.5 },
+  { id:'custom',   label:'Eigene…',   icon:'i-sliders', lx: 0.20, az:  0.00, d:1.0 },
+];
+
+const TYPE_CLASS = { forward:'tb-forward', backward:'tb-backward', left:'tb-left', right:'tb-right', curve_l:'tb-curve', curve_r:'tb-curve', stop:'tb-stop' };
+const typeClass = id => TYPE_CLASS[id] || 'tb-custom';
+
+let steps = [];
+let dragSrc = null;
+
+function svgUse(id, size) {
+  return `<span class="ico" style="width:${size}px;height:${size}px"><svg viewBox="0 0 24 24"><use href="#${id}"/></svg></span>`;
+}
+
+function buildPresets() {
+  const g = document.getElementById('presetGrid');
+  PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'preset-btn';
+    b.innerHTML = svgUse(p.icon, 22) + `<span class="plabel">${p.label}</span>`;
+    b.addEventListener('click', () => addStep(p));
+    g.appendChild(b);
+  });
+}
+
+function addStep(p) {
+  steps.push({ _preset:p.id, action:p.id==='custom'?'custom':p.id, linear_x:p.lx, angular_z:p.az, duration:p.d });
+  render();
+}
+
+function removeStep(i) { steps.splice(i,1); render(); }
+function moveUp(i)   { if(i>0)              { [steps[i-1],steps[i]]=[steps[i],steps[i-1]]; render(); } }
+function moveDown(i) { if(i<steps.length-1) { [steps[i],steps[i+1]]=[steps[i+1],steps[i]]; render(); } }
+
+function updateStep(i, field, val) {
+  if(['linear_x','angular_z','duration'].includes(field)) val=parseFloat(val)||0;
+  steps[i][field]=val;
+  if(field==='action') steps[i]._preset='custom';
+  render();
+}
+
+function render() {
+  const list=document.getElementById('stepsList');
+  document.getElementById('stepCounter').textContent=steps.length+(steps.length===1?' Anweisung':' Anweisungen');
+
+  if(!steps.length){
+    list.innerHTML=`<div class="empty-state">${svgUse('i-up',26)}<br>Wähle oben einen Befehlstyp aus, um zu beginnen</div>`;
+  } else {
+    list.innerHTML=steps.map((s,i)=>`
+      <div class="step-card" draggable="true" id="sc-${i}"
+           ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event,${i})"
+           ondrop="onDrop(event,${i})" ondragend="onDragEnd()">
+        <span class="ico drag-handle" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><use href="#i-grip"/></svg></span>
+        <span class="step-num">${i+1}</span>
+        <span class="type-badge ${typeClass(s._preset)}">${s.action}</span>
+        <div class="step-fields">
+          <div class="field-wrap"><span class="field-lbl">action</span>
+            <input class="field-in wide" value="${esc(s.action)}" onchange="updateStep(${i},'action',this.value)"/>
+          </div>
+          <div class="field-wrap"><span class="field-lbl">linear_x</span>
+            <input class="field-in" type="number" step="0.05" value="${s.linear_x}" onchange="updateStep(${i},'linear_x',this.value)"/>
+          </div>
+          <div class="field-wrap"><span class="field-lbl">angular_z</span>
+            <input class="field-in" type="number" step="0.05" value="${s.angular_z}" onchange="updateStep(${i},'angular_z',this.value)"/>
+          </div>
+          <div class="field-wrap"><span class="field-lbl">duration (s)</span>
+            <input class="field-in" type="number" step="0.1" min="0.1" value="${s.duration}" onchange="updateStep(${i},'duration',this.value)"/>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button class="icon-btn" title="Nach oben" onclick="moveUp(${i})">${svgUse('i-up',15)}</button>
+          <button class="icon-btn" title="Nach unten" onclick="moveDown(${i})">${svgUse('i-down',15)}</button>
+          <button class="icon-btn del" title="Löschen" onclick="removeStep(${i})">${svgUse('i-x',15)}</button>
+        </div>
+      </div>`).join('');
+  }
+  updateStats(); updateJSON(); drawPath();
+}
+
+function onDragStart(e,i){ dragSrc=i; setTimeout(()=>document.getElementById('sc-'+i)?.classList.add('dragging'),0); }
+function onDragOver(e,i) { e.preventDefault(); document.getElementById('sc-'+i)?.classList.add('drag-over'); }
+function onDrop(e,i)     { e.preventDefault(); onDragEnd(); if(dragSrc!==null&&dragSrc!==i){const m=steps.splice(dragSrc,1)[0];steps.splice(i,0,m);} dragSrc=null; render(); }
+function onDragEnd()     { document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('dragging','drag-over')); }
+
+function updateStats(){
+  const total=steps.reduce((a,s)=>a+ +s.duration,0);
+  const maxV =steps.reduce((a,s)=>Math.max(a,Math.abs(+s.linear_x)),0);
+  const maxW =steps.reduce((a,s)=>Math.max(a,Math.abs(+s.angular_z)),0);
+  document.getElementById('sDauer').innerHTML=total.toFixed(1)+' <span class="stat-unit">s</span>';
+  document.getElementById('sCount').textContent=steps.length;
+  document.getElementById('sMaxV').innerHTML=maxV.toFixed(2)+' <span class="stat-unit">m/s</span>';
+  document.getElementById('sMaxW').innerHTML=maxW.toFixed(2)+' <span class="stat-unit">r/s</span>';
+}
+
+/* English field names matching the Python node */
+function getJSON(){
+  return steps.map(s=>({
+    action:    s.action,
+    linear_x:  parseFloat((+s.linear_x).toFixed(3)),
+    angular_z: parseFloat((+s.angular_z).toFixed(3)),
+    duration:  parseFloat((+s.duration).toFixed(2)),
+  }));
+}
+
+function syntaxHL(json){
+  return json
+    .replace(/("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|-?\d+\.?\d*(?:[eE][+-]?\d+)?|\b(?:true|false|null)\b)/g,m=>{
+      if(/^"/.test(m)) return/:$/.test(m)?`<span class="jk">${m}</span>`:`<span class="js">${m}</span>`;
+      return`<span class="jn">${m}</span>`;
+    })
+    .replace(/[{}\[\],]/g,m=>`<span class="jp">${m}</span>`);
+}
+function updateJSON(){ document.getElementById('jsonOutput').innerHTML=syntaxHL(JSON.stringify(getJSON(),null,2)); }
+
+function downloadJSON(){
+  if(!steps.length){toast('Keine Anweisungen vorhanden!');return;}
+  const blob=new Blob([JSON.stringify(getJSON(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'),{href:url,download:'instructions.json'}).click();
+  URL.revokeObjectURL(url);
+  toast('instructions.json heruntergeladen!');
+}
+function copyJSON(){
+  if(!steps.length){toast('Keine Anweisungen vorhanden!');return;}
+  navigator.clipboard.writeText(JSON.stringify(getJSON(),null,2)).then(()=>toast('JSON kopiert!'));
+}
+function copyPython(){
+  if(!steps.length){toast('Keine Anweisungen vorhanden!');return;}
+  const items=getJSON().map(s=>`    {"action": "${s.action}", "linear_x": ${s.linear_x}, "angular_z": ${s.angular_z}, "duration": ${s.duration}}`).join(',\n');
+  navigator.clipboard.writeText(`DEFAULT_INSTRUCTIONS = [\n${items}\n]`).then(()=>toast('Python-Code kopiert!'));
+}
+
+/* Accepts English (action/duration) AND German (aktion/dauer) field names */
+function importJSON(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw new Error();
+      steps=data.map(s=>({
+        _preset:'custom',
+        action:   s.action   ?? s.aktion   ?? 'custom',
+        linear_x: +(s.linear_x  ?? 0),
+        angular_z: +(s.angular_z ?? 0),
+        duration: +(s.duration  ?? s.dauer ?? 1),
+      }));
+      render(); toast(`${steps.length} Anweisung(en) importiert!`);
+    }catch{toast('Fehler beim Lesen der JSON-Datei');}
+  };
+  r.readAsText(file); e.target.value='';
+}
+
+function drawPath(){
+  const canvas=document.getElementById('pathCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const gridColor=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  const pathColor=dark?'#60A5FA':'#185FA5';
+  const arrowColor=dark?'#93C5FD':'#378ADD';
+
+  ctx.strokeStyle=gridColor; ctx.lineWidth=0.5;
+  for(let x=0;x<W;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  if(!steps.length){
+    ctx.fillStyle=dark?'rgba(255,255,255,0.15)':'rgba(0,0,0,0.18)';
+    ctx.font='13px system-ui,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Noch keine Anweisungen',W/2,H/2);
+    return;
+  }
+
+  const SCALE=28,DT=0.08;
+  let px=0,py=0,angle=Math.PI/2;
+  const pts=[{x:0,y:0}],arrows=[];
+  steps.forEach(s=>{
+    const n=Math.max(1,Math.round(+s.duration/DT));
+    for(let t=0;t<n;t++){angle+= +s.angular_z*DT;px+= +s.linear_x*Math.cos(angle)*DT*SCALE;py-= +s.linear_x*Math.sin(angle)*DT*SCALE;pts.push({x:px,y:py});}
+    arrows.push({x:px,y:py,angle});
+  });
+
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const pad=32,rx=Math.max(...xs)-Math.min(...xs)||1,ry=Math.max(...ys)-Math.min(...ys)||1;
+  const sc=Math.min((W-pad*2)/rx,(H-pad*2)/ry,5);
+  const ox=W/2-((Math.min(...xs)+Math.max(...xs))/2)*sc;
+  const oy=H/2-((Math.min(...ys)+Math.max(...ys))/2)*sc;
+  const tx=p=>p.x*sc+ox,ty=p=>p.y*sc+oy;
+
+  ctx.beginPath();
+  pts.forEach((p,i)=>i===0?ctx.moveTo(tx(p),ty(p)):ctx.lineTo(tx(p),ty(p)));
+  ctx.strokeStyle=pathColor; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+
+  arrows.forEach(a=>{
+    const ax=Math.cos(a.angle),ay=-Math.sin(a.angle),al=7;
+    const px2=a.x*sc+ox,py2=a.y*sc+oy;
+    ctx.beginPath();ctx.moveTo(px2+ax*al,py2+ay*al);ctx.lineTo(px2-ax*al+ay*4,py2-ay*al-ax*4);ctx.lineTo(px2-ax*al-ay*4,py2-ay*al+ax*4);
+    ctx.closePath();ctx.fillStyle=arrowColor;ctx.fill();
+  });
+
+  ctx.beginPath();ctx.arc(tx(pts[0]),ty(pts[0]),6,0,Math.PI*2);ctx.fillStyle=dark?'#34D399':'#0F6E56';ctx.fill();
+  const last=pts[pts.length-1];
+  ctx.beginPath();ctx.arc(tx(last),ty(last),6,0,Math.PI*2);ctx.fillStyle=dark?'#F87171':'#A32D2D';ctx.fill();
+}
+
+function esc(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function clearAll(){steps=[];render();}
+
+function loadExample(){
+  steps=[
+    {_preset:'forward', action:'move_forward', linear_x:0.3, angular_z:0.0, duration:2.0},
+    {_preset:'left',    action:'turn_left',    linear_x:0.0, angular_z:0.5, duration:1.57},
+    {_preset:'forward', action:'move_forward', linear_x:0.3, angular_z:0.0, duration:2.0},
+    {_preset:'left',    action:'turn_left',    linear_x:0.0, angular_z:0.5, duration:1.57},
+    {_preset:'forward', action:'move_forward', linear_x:0.3, angular_z:0.0, duration:2.0},
+    {_preset:'left',    action:'turn_left',    linear_x:0.0, angular_z:0.5, duration:1.57},
+    {_preset:'forward', action:'move_forward', linear_x:0.3, angular_z:0.0, duration:2.0},
+    {_preset:'stop',    action:'stop',         linear_x:0.0, angular_z:0.0, duration:0.5},
+  ];
+  render();toast('Beispiel geladen: Quadrat-Parcours');
+}
+
+buildPresets();
+render();
+window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',drawPath);
+</script>
+</body>
+</html>
