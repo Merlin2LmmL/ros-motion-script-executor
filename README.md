@@ -857,7 +857,7 @@ source install/setup.bash
 # 4. Pygame installieren (das Grafikframework für den Simulator)
 pip3 install pygame --break-system-packages
 ```
-> Anmerkung: Die flag "--break-system-packages" klingt sehr gefährlich, ist sie aber in diesem Fall gar nicht. Sie wurde beabsichtigt so abschreckend benannt, um vor den gebrauch ab zu schrecken, da dringend empfohlen wird, pip Pakete in einem sog. venv zu installieren. Da das Einrichten eines Venvs allerdings 1-2 extra Kapitel erfordern würde, weichen wir aus Zeit- und Komplexitätsgründen darauf zurück, das die Library global auf dem Rechner zu installieren. Falls jemand dagegen einen Einwand haben sollte, steht es demjenigen frei, stattdessen Pycharm in einem Venv zu installieren.
+> Anmerkung: Die flag "--break-system-packages" klingt sehr gefährlich, ist sie aber in diesem Fall gar nicht. Sie wurde beabsichtigt so abschreckend benannt, um vor dem Gebrauch abzuschrecken, da dringend empfohlen wird, pip Pakete in einem sog. venv zu installieren. Da das Einrichten eines Venvs allerdings 1-2 extra Kapitel erfordern würde, weichen wir aus Zeit- und Komplexitätsgründen darauf zurück, die Library global auf dem Rechner zu installieren. Falls jemand dagegen einen Einwand haben sollte, steht es demjenigen frei, stattdessen Pycharm in einem Venv zu installieren.
 
 
 ### Das richtige Topic herausfinden
