@@ -207,9 +207,11 @@ source /opt/ros/jazzy/setup.bash
 
 Teste die Installation mit:
 ```bash
-ros2 --version
+ros2 --help
+// ODER
+echo $ROS_DISTRO
 ```
-Du solltest etwas wie `ros2 jazzy` sehen.
+Mit ersterem sollte dir Hilfe zu den Befehlen mit ros2 gegeben werden und mit zweiterem solltest etwas wie `jazzy` sehen.
 
 ---
 
@@ -224,9 +226,10 @@ ROS2 basiert auf einem einfachen, aber mächtigen Konzept:
 ```
 
 - **Node (Knoten):** Ein eigenständiges Programm, das eine bestimmte Aufgabe erfüllt (z.B. einen Motor ansteuern, Kamerabilder verarbeiten, Entscheidungen treffen)
-- **Topic:** Ein benannter Kommunikationskanal. Nodes können Topics **publizieren** (senden) oder **subscriben** (empfangen)
-- **Message:** Das Datenformat, das über ein Topic geschickt wird (z.B. eine Geschwindigkeit, ein Bild, ein Sensorwert)
+- **Topic:** Ein benannter Kommunikationskanal. Nodes können Topics **publizieren** (senden) oder **subscriben** (empfangen). Stell es dir wie einen gemeinsamen "Chat" vor, auf den verschiedene Knoten Zugriff haben. 
+- **Message:** Das Datenformat, das über ein Topic geschickt wird (z.B. eine Geschwindigkeit, ein Bild, ein Sensorwert). Stell es dir wie die Sprache im Chat vor.
 
+#### Weitere Verdeutlichung:
 Das Prinzip ist ähnlich wie ein Schwarzes Brett: Jeder kann Zettel anpinnen (publizieren) und jeder kann Zettel lesen (subscriben). Das Schwarze Brett selbst ist das Topic.
 
 ### Nützliche ROS2-Befehle
@@ -765,7 +768,7 @@ cd ~/ros2_ws
 
 ### Das Paket bauen
 
-Nur dein Paket bauen (schneller als alles zu bauen):
+Wenn du später einmal mehrere Pakete selbst gebaut hast, ist es sinnvoll, nur das Paket zu bauen, an dem du aktuell arbeitest. Nutze dafür die flag --packages-select. Aber Achtung: Du kannst dir hier deinen Paketnamen nicht vervollständigen lassen:
 ```bash
 colcon build --packages-select <paketname>
 ```
@@ -837,7 +840,7 @@ angular:
 
 ### Den OHM-Mecanum-Simulator installieren
 
-Die OHM Technische Hochschule Nürnberg hat einen 2D-Robotersimulator entwickelt, der sich gut für unsere Zwecke eignet. Wir installieren ihn als weiteres ROS2-Paket:
+Die OHM Technische Hochschule Nürnberg hat einen 2D-Robotersimulator entwickelt, der sich gut aufgrund seiner Einfachheit für unsere Zwecke eignet. Wir installieren ihn als weiteres ROS2-Paket:
 
 ```bash
 # 1. Quellcode herunterladen
@@ -854,6 +857,8 @@ source install/setup.bash
 # 4. Pygame installieren (das Grafikframework für den Simulator)
 pip3 install pygame --break-system-packages
 ```
+> Anmerkung: Die flag "--break-system-packages" klingt sehr gefährlich, ist sie aber in diesem Fall gar nicht. Sie wurde beabsichtigt so abschreckend benannt, um vor den gebrauch ab zu schrecken, da dringend empfohlen wird, pip Pakete in einem sog. venv zu installieren. Da das Einrichten eines Venvs allerdings 1-2 extra Kapitel erfordern würde, weichen wir aus Zeit- und Komplexitätsgründen darauf zurück, das die Library global auf dem Rechner zu installieren. Falls jemand dagegen einen Einwand haben sollte, steht es demjenigen frei, stattdessen Pycharm in einem Venv zu installieren.
+
 
 ### Das richtige Topic herausfinden
 
@@ -868,7 +873,7 @@ Ein Fenster mit dem Roboter öffnet sich. Jetzt finden wir heraus, welches Topic
 ros2 topic list
 ```
 
-Schau dir die Liste an – welches Topic enthält `cmd_vel`? Es ist nicht einfach `/cmd_vel`.
+Schau dir die Liste an. Welches Topic enthält `cmd_vel`? Es ist nicht einfach `/cmd_vel`.
 
 Du kannst auch mehr Informationen über ein Topic bekommen:
 ```bash
