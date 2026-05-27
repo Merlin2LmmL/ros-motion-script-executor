@@ -1,5 +1,7 @@
 # Dein erster ROS2-Knoten – Ein Schritt-für-Schritt-Tutorial
-
+<p align="left">
+  🇬🇧 <a href="./README.en.md">Switch to English</a>
+</p>
 **Zielgruppe:** Schülerinnen und Schüler mit Grundkenntnissen in Python, die noch keine Erfahrung mit Linux-Terminals oder ROS haben.
 
 **Ziel:** Am Ende dieses Tutorials hast du einen eigenen ROS2-Knoten gebaut, der einen simulierten Roboter bewegt.
@@ -1028,4 +1030,12 @@ source install/setup.bash
 
 ---
 
-*Tutorial erstellt für das Robotik-Wahlfach. **Autor: Merlin Ortner <ortnermerlin@gmail.com>***
+## Authorship
+
+### ROS Introduction Repository — DBG-Robots
+
+**Merlin Ortner**  
+**Repository Owner & Principal Maintainer**  
+Original Author of this repository and responsible for long-term maintenance, development, and stewardship.
+
+Contact: ortnermerlin@gmail.com
